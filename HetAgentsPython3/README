@@ -1,0 +1,23 @@
+Codes for Heterogeneous-Agent Macro Lecture notes.
+Alisdair McKay
+Aug 16, 2018
+
+If you are using these codes as a learning resource, I suggest you proceed in
+this order:
+(1) RBC.py
+(2) EGM.py
+(3) Aiyagari.py
+(4a) Reiter.py
+(4b) MITshocks.py
+
+Note that the later programs import code and results from the earlier programs.
+Therefore, if you are tinkering with the programs, you may want to make copies
+first.
+
+Computing environment:
+Here are the version numbers, for the environment in which I developed the code
+Python version 3.6.5
+Python modules:
+  autograd==1.2
+  matplotlib==2.2.2
+  scipy==1.1.0
