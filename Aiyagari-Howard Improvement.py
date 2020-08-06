@@ -147,7 +147,7 @@ def reward(r, HH, g):
     
 
 # Policy function iteration
-def policy(g, r, HH, maxiter = 1000, tol = 10**(-5)):
+def policy(g, r, HH, maxiter = 1000, tol = 10**(-8)):
     error = 1
     iter = 0
     test1 = (error > tol)
@@ -180,7 +180,7 @@ def policy(g, r, HH, maxiter = 1000, tol = 10**(-5)):
 
 # Calculating the invariate distribution
 @jit
-def distribution(indk, HH, tol = 10**(-8), maxiter = 10000):
+def distribution(indk, HH, tol = 10**(-10), maxiter = 10000):
     nz, nk = HH.nz, HH.nk
     dist = np.ones((nz,nk))/(nz*nk)
     
@@ -247,7 +247,7 @@ def Aiyagari(k_t, HH):
         print("The error in iteration %.0F is %F." % (iter, error))
         print("The capital supply is %F, and the interest rate is %F." %(k_s, r*100))
         print("PFI and simulation took %.3F and %.3F seconds respectively" % ((stop1-start1), (stop2-start2)))
-        k_t = 0.95*k_t + 0.05*k_s
+        k_t = 0.99*k_t + 0.01*k_s
     print("\nThe equilibrium interest rate is %F." % (r*100))
     # Das Ziel sollte 3.87 sein 
     # Resultat war 3.6498 (Check against QE results)
