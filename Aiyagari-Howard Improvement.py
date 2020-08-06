@@ -147,7 +147,7 @@ def reward(r, HH, g):
     
 
 # Policy function iteration
-def policy(g, r, HH, maxiter = 1000, tol = 10**(-8)):
+def policy(g, r, HH, maxiter = 1000, tol = 10**(-10)):
     error = 1
     iter = 0
     test1 = (error > tol)
