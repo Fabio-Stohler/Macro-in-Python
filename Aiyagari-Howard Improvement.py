@@ -147,7 +147,7 @@ def reward(r, HH, g):
     
 
 # Policy function iteration
-def policy(g, r, HH, maxiter = 1000, tol = 10**(-5)):
+def policy(g, r, HH, maxiter = 1000, tol = 10**(-10)):
     error = 1
     iter = 0
     test1 = (error > tol)
@@ -180,7 +180,7 @@ def policy(g, r, HH, maxiter = 1000, tol = 10**(-5)):
 
 # Calculating the invariate distribution
 @jit
-def distribution(indk, HH, tol = 10**(-8), maxiter = 10000):
+def distribution(indk, HH, tol = 10**(-10), maxiter = 10000):
     nz, nk = HH.nz, HH.nk
     dist = np.ones((nz,nk))/(nz*nk)
     
