@@ -201,19 +201,6 @@ def distribution(indk, HH, tol = 10**(-10), maxiter = 10000):
     return dist
 
 
-# Algorithm:
-# 0. Guess r, v and compute a policy function
-# 1. Compute J
-# 2. Generate v
-# 3. Extract the policy function
-# 4. Check the error between the policy functions
-# 5. Aggregate the economy
-# 6. Check for the error in the capital market
-# 7. Update the interest rate
-# 8. Check the error in the interest rate
-# 9. Go back to 0. if no convergence is achieved
-
-
 # Function to solve for the equilibrium
 @jit
 def Aiyagari(k_t, HH):
