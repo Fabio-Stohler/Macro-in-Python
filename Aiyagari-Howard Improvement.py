@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 """
-Spyder Editor
 
 This solves the Aiyagari model with policy function iteration
 Furthermore, it aggreagtes the economy with the invariate distribution
 
 """
+
 
 import numpy as np
 import time
