@@ -18,7 +18,7 @@ class HH:
     
     def __init__(self, theta = 0.36, delta = 0.08, sigma = 3, 
                  beta = 0.96, nz = 7, rho = 0.9, stdev = 0.2,
-                 m = 3, nk = 500, kmin = 10**(-5), kmax = 100):
+                 m = 3, nk = 500, kmin = 10**(-5), kmax = 50):
         
         # Setup parameters
         self.theta, self.delta, self.sigma = theta, delta, sigma
@@ -69,7 +69,7 @@ hh = HH(nz = nz, nk = nk, rho = rho, sigma = sigma)
 
 # Current level
 P, l_s = hh.markov()
-r = 3.87/100
+r = (3.87-1)/100
 k_t = hh.interest_reverse(r)
 
 
@@ -147,7 +147,7 @@ def reward(r, HH, g):
     
 
 # Policy function iteration
-def policy(g, r, HH, maxiter = 1000, tol = 10**(-10)):
+def policy(g, r, HH, maxiter = 1000, tol = 10**(-11)):
     error = 1
     iter = 0
     test1 = (error > tol)
@@ -180,7 +180,7 @@ def policy(g, r, HH, maxiter = 1000, tol = 10**(-10)):
 
 # Calculating the invariate distribution
 @jit
-def distribution(indk, HH, tol = 10**(-10), maxiter = 10000):
+def distribution(indk, HH, tol = 10**(-11), maxiter = 10000):
     nz, nk = HH.nz, HH.nk
     dist = np.ones((nz,nk))/(nz*nk)
     
@@ -199,19 +199,6 @@ def distribution(indk, HH, tol = 10**(-10), maxiter = 10000):
         test2 = (iter < maxiter)
         iter = iter+1
     return dist
-
-
-# Algorithm:
-# 0. Guess r, v and compute a policy function
-# 1. Compute J
-# 2. Generate v
-# 3. Extract the policy function
-# 4. Check the error between the policy functions
-# 5. Aggregate the economy
-# 6. Check for the error in the capital market
-# 7. Update the interest rate
-# 8. Check the error in the interest rate
-# 9. Go back to 0. if no convergence is achieved
 
 
 # Function to solve for the equilibrium
@@ -247,7 +234,14 @@ def Aiyagari(k_t, HH):
         print("The error in iteration %.0F is %F." % (iter, error))
         print("The capital supply is %F, and the interest rate is %F." %(k_s, r*100))
         print("PFI and simulation took %.3F and %.3F seconds respectively" % ((stop1-start1), (stop2-start2)))
-        k_t = 0.95*k_t + 0.05*k_s
+        if error > 2:
+            k_t = 0.95*k_t + 0.05*k_s
+        elif error > 0.5:
+            k_t = 0.99*k_t + 0.01*k_s
+        elif error > 0.05:
+            k_t = 0.995*k_t + 0.005*k_s
+        else:
+            k_t = 0.999*k_t + 0.001*k_s
     print("\nThe equilibrium interest rate is %F." % (r*100))
     # Das Ziel sollte 3.87 sein 
     # Resultat war 3.6498 (Check against QE results)
@@ -274,13 +268,48 @@ plt.savefig("convergence.png")
 
 
 # Reinterpreting the distribution
-dist = np.sum(dist, axis = 0)
-dist = dist*hh.k
+# Problem is that it already contains the relative frequencies
+dist1 = distribution(indk, hh)
+dist1 = np.sum(dist1, axis = 0)
+
+
+# Density function
+plt.figure(figsize = (15,10))
+plt.plot(hh.k, dist1)
+plt.xlabel('Asset Value')
+plt.ylabel('Frequency')
+plt.title('Asset Distribution')
+plt.show()
+
+
+# Monte-Carlo simulation for asset distribution and gini
+T = 1000000
+mc = hh.mc
+k = hh.k
+sim = hh.mc.simulate_indices(T, init = int((nz-1)/2))
+@jit
+def simulate(mc, indk, l = sim, k = k, N = 5000, T = T):
+    nz  = np.shape(mc.P)[0]
+    T   = np.shape(l)[0]
+    m   = T/N
+    ind = np.zeros(N)
+    for n in range(N):
+        l  = np.concatenate((l[int(n*m):T],l[0:int(n*m)]))
+        temp = indk[int((nz-1)/2),int(nk/2)]
+        for t in range(T):
+            temp   = indk[int(l[t]),int(temp)]
+        ind[n] = temp
+    a = k[np.int64(ind)]
+    return a
+
+
+# Generate a new distribution
+dist2 = simulate(mc,indk,N = 10000)
 
 
 # Plot the distribution
 plt.figure(figsize = (15,10))
-n, bins, patches = plt.hist(x=dist, bins='auto', color='#0504aa',alpha=0.7, rwidth=0.85,histtype="stepfilled")
+n, bins, patches = plt.hist(x=dist2, bins='auto', color='#0504aa',alpha=0.7, rwidth=0.85,histtype="stepfilled")
 plt.xlabel('Asset Value')
 plt.ylabel('Frequency')
 plt.title('Asset Distribution')
@@ -302,5 +331,8 @@ def gini(x):
     g = 0.5 * rmad
     return g
 
-# Sollte 0.32 sein
-print("The gini coefficient for the distribution is %F." %(gini(dist)))
+
+# Print the output
+print("\nThe equilibrium interest rate is %F." % (r*100))
+print("Solving the model took %F minutes." %((stop - start)/60))
+print("The gini coefficient for the distribution is %F." %(gini(dist2)))
