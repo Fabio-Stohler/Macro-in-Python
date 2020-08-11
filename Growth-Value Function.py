@@ -2,8 +2,7 @@
 """
 Spyder Editor
 
-This solves the RBC model with value function iteration and exogenous labor
-supply
+This solves the stochastic growth model with value function iteration
 
 """
 

@@ -17,9 +17,9 @@ from numba import jit
 #parameters
 theta = 0.36 
 delta = 0.08
-sigma = 5
+sigma = 3
 beta  = 0.96
-nz    = np.int(7)
+nz    = 7
 rho   = 0.6
 stdev = 0.2
 stdz  = stdev*(1-rho**2)**(1/2)
@@ -91,7 +91,7 @@ def Value(w, R, sigma = sigma, beta = beta, P = P):
 
 # Calculating the invariate distribution
 @jit
-def distribution(indk, P = P, nz = nz, nk = nk, tol = 10**(-12), maxiter = 50000):
+def distribution(indk, P = P, nz = nz, nk = nk, tol = 10**(-11), maxiter = 50000):
     dist = np.ones((nz,nk))/(nz*nk)
     
     error = 1
@@ -117,8 +117,8 @@ def Aiyagari(l, k_t):
     iter    = 0
     error   = 10
     tol     = 0.01
-    
-    while error > tol:
+    test    = (error > tol)
+    while test:
         r = theta*(k_t/l_s)**(theta-1) - delta
         if r > 1/beta - 1:
             r = 1/beta - 1
@@ -142,7 +142,20 @@ def Aiyagari(l, k_t):
         print("The error in iteration %.0F is %F." % (iter, error))
         print("The capital supply is %F, and the interest rate is %F." %(k_s, r*100))
         print("Value function and simulation took %.3F and %.3F seconds respectively" % ((stop1-start1), (stop2-start2)))
-        k_t = 0.99*k_t + 0.01*k_s
+        if error > 10:
+            k_t = 0.9*k_t + 0.1*k_s
+        elif error > 5:
+            k_t = 0.95*k_t + 0.05*k_s
+        elif error > 1:
+            k_t = 0.99*k_t + 0.01*k_s
+        else:
+            k_t = 0.995*k_t + 0.005*k_s
+        #elif error > 0.5:
+        #    k_t = 0.995*k_t + 0.005*k_s
+        #else:
+        #    k_t = 0.9975*k_t + 0.0025*k_s
+        #k_t = 0.99*k_t + 0.01*k_s
+        test = (error > tol)
     print("\nThe equilibrium interest rate is %F." % (r*100))
     # Das Ziel sollte 3.87 sein 
     # Resultat war 3.6498 (Check against QE results)
@@ -198,5 +211,6 @@ def gini(x):
     return g
 
 
+# (2.28 minutes)
 # Resultat sollte 0.32 sein für gamma = 5, rho = 0.6, und sigma = 0.2
 print("The gini coefficient for the distribution is %F." %(gini(dist)))

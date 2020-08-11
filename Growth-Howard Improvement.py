@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Spyder Editor
 
-This solves the RBC model with value function iteration and exogenous labor
-supply
+This solves the stochastic growth model with policy function iteration
 
 """
 
@@ -15,16 +13,17 @@ from numba import jit
 
 
 #parameters
-theta = 0.4; 
-delta = 0.019;
-sigma = 2;
-beta  = 0.99;
-nk    = 100;
-nz    = np.int(21);
-rho   = 0.95;
-stdz  = np.sqrt(0.000049);
-m     = 3;
-nk   = np.int(500);
+theta = 0.4
+delta = 0.019
+sigma = 2
+beta  = 0.99
+nk    = 100
+nz    = 21
+rho   = 0.95
+stdz  = 0.007
+m     = 3
+nk    = 500
+
 
 #discretizing the grid
 mc = qe.markov.approximation.tauchen(rho,stdz,0,m,nz)

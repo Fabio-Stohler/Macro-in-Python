@@ -1,10 +1,11 @@
+# -*- coding: utf-8 -*-
 """
+Spyder Editor
 
 This solves the Aiyagari model with value function iteration.
 It uses Monte-Carlo simulation to aggregate the economy.
 
 """
-
 
 import numpy as np
 import time
@@ -17,13 +18,12 @@ class HH:
     
     def __init__(self, theta = 0.36, delta = 0.08, sigma = 3, 
                  beta = 0.96, nz = 7, rho = 0.9, stdev = 0.2,
-                 m = 3, nk = 500, kmin = 10**(-5), kmax = 50,
-                 T = 1000000):
+                 m = 3, nk = 500, kmin = 10**(-5), kmax = 50):
         
         # Setup parameters
         self.theta, self.delta, self.sigma = theta, delta, sigma
         self.beta, self.nz, self.nk, self.m = beta, nz, nk, m
-        self.rho, self.stdev, self.T = rho, stdev, T
+        self.rho, self.stdev = rho, stdev
         self.stdz = stdev*(1-rho**2)**(1/2)
         self.kmin, self.kmax = kmin, kmax
         
@@ -51,16 +51,13 @@ class HH:
     def markov(self):
         self.mc = qe.markov.approximation.tauchen(self.rho,self.stdz,
                                              0,self.m,self.nz)
-        
-        self.sim = self.mc.simulate_indices(self.T, init = int((self.nz-1)/2))
-        
         self.P = self.mc.P
         self.l = np.exp(self.mc.state_values)
         inv_l = np.linalg.matrix_power(self.P,1000)
         inv_dist = inv_l[0,:]
         self.l_s = np.dot(self.l, inv_dist)
-        return self.P, self.l_s, self.sim
-
+        return self.P, self.l_s
+    
 
 # Generating a class
 nz = 7
@@ -68,21 +65,24 @@ nk = 500
 sigma = 3
 rho = 0.6
 hh = HH(nz = nz, nk = nk, rho = rho, sigma = sigma)
-P, l_s, sim = hh.markov()
 
 
 # Current level
+P, l_s = hh.markov()
 r = (3.87-1)/100
 k_t = hh.interest_reverse(r)
 
 
-# Value function iteration
+#Value function iteration
 @jit 
-def Value(r, HH, tolv = 10**(-8), maxiter = 1000):
-    w = HH.r_to_w(r)
+def Value(r, HH):
     sigma, beta, P = HH.sigma, HH.beta, HH.P
-    l, k = hh.l, hh.k
+    l, k = HH.l, HH.k
+    w = hh.r_to_w(r)
+    
     diff    = 10
+    maxiter = 1000
+    tolv    = 10**-9
     iter    = 1
     
     # Empty matrices
@@ -90,9 +90,7 @@ def Value(r, HH, tolv = 10**(-8), maxiter = 1000):
     V    = np.copy(g)
     newV = np.copy(g)
     indk = np.copy(V)
-    test1 = (diff > tolv)
-    test2 = (iter<maxiter)
-    while (test1 and test2):
+    while (diff > tolv and iter<maxiter):
         for iz in range(nz):
             for ik in range(nk):
                 c = w*l[iz] + (1+r)*k[ik] - k
@@ -113,29 +111,35 @@ def Value(r, HH, tolv = 10**(-8), maxiter = 1000):
     return V, g, indk
 
 
-# Simulate the economy and find capital supply
+# Calculating the invariate distribution
 @jit
-def simulate(HH, indk, N = 5000):
-    mc, l, k, T = HH.mc, HH.sim, HH.k, HH.T
+def distribution(indk, HH, tol = 10**(-11), maxiter = 50000):
     
-    nz  = np.shape(mc.P)[0]
-    T   = np.shape(l)[0]
-    m   = T/N
-    ind = np.zeros(N)
-    for n in range(N):
-        l  = np.concatenate((l[int(n*m):T],l[0:int(n*m)]))
-        temp = indk[int((nz-1)/2),int(nk/2)]
-        for t in range(T):
-            temp   = indk[int(l[t]),int(temp)]
-        ind[n] = temp
-    a = k[np.int64(ind)]
-    return a
+    P, nz, nk = HH.P, HH.nz, HH.nk
+    dist = np.ones((nz,nk))/(nz*nk)
+    
+    error = 1
+    iter = 0
+    test1 = (error > tol)
+    test2 = (iter < maxiter)
+    while (test1 and test2):
+        distnew = np.zeros((nz,nk))
+        for j in range(nk):
+            for i in range(nz):
+                distnew[:,int(indk[i,j])] = distnew[:,int(indk[i,j])] + dist[i,j]*P[i,:]
+        error = np.linalg.norm(distnew - dist)
+        dist = np.copy(distnew)
+        test1 = (error > tol)
+        test2 = (iter < maxiter)
+        iter = iter+1
+    return dist
 
 
 # Function to solve for the equilibrium
 @jit
-def Aiyagari(HH, k_t):
-    beta = HH.beta
+def Aiyagari(k_t,HH):
+    beta, k = HH.beta, HH.k
+    
     iter    = 0
     error   = 10
     tol     = 0.01
@@ -148,40 +152,45 @@ def Aiyagari(HH, k_t):
         
         # Value function iteration
         start1 = time.time()
-        V, g, indk = Value(r, HH)   
+        V, g, indk = Value(r,HH) 
         stop1 = time.time()                   
         
         # Find capital supply
         start2 = time.time()
-        a = simulate(HH, indk)
+        dist = distribution(indk,HH)
         stop2 = time.time()
-        k_s = np.mean(a)
+        k_s = np.sum(k*np.sum(dist, axis = 0))
         r1 = HH.interest(k_s)
         error = np.abs(r-r1)*100
         print("\n--------------------------------------------------------------------------------------")
         print("The error in iteration %.0F is %F." % (iter, error))
         print("The capital supply is %F, and the interest rate is %F." %(k_s, r*100))
         print("Value function and simulation took %.3F and %.3F seconds respectively" % ((stop1-start1), (stop2-start2)))
-        if error > 2:
+        if error > 10:
+            k_t = 0.9*k_t + 0.1*k_s
+        elif error > 5:
             k_t = 0.95*k_t + 0.05*k_s
-        elif error > 0.5:
+        elif error > 1:
             k_t = 0.99*k_t + 0.01*k_s
-        elif error > 0.05:
-            k_t = 0.995*k_t + 0.005*k_s
         else:
-            k_t = 0.999*k_t + 0.001*k_s
+            k_t = 0.995*k_t + 0.005*k_s
+        #elif error > 0.5:
+        #    k_t = 0.995*k_t + 0.005*k_s
+        #else:
+        #    k_t = 0.9975*k_t + 0.0025*k_s
+        #k_t = 0.99*k_t + 0.01*k_s
         test = (error > tol)
     print("\nThe equilibrium interest rate is %F." % (r*100))
     # Das Ziel sollte 3.87 sein 
     # Resultat war 3.6498 (Check against QE results)
-    return V, g, indk, a, r
+    return V, g, indk, dist, r
 
 
 # Running the function
 start = time.time()
-V, g, indk, a, r = Aiyagari(hh,k_t)
+V, g, indk, dist, r = Aiyagari(k_t,hh)
 stop = time.time()
-print("Solving the model took %F minutes." %((stop - start)/60))
+print("Solving the model took %F seconds." %((stop - start)))
 
 
 # Plot the value function and the policy function
@@ -196,13 +205,48 @@ plt.show()
 plt.savefig("convergence.png")
 
 
+# Generating the distribution
+dist1 = distribution(indk, hh)
+dist1 = np.sum(dist1, axis = 0)
+
+
+# Density function
+plt.figure(figsize = (15,10))
+plt.plot(hh.k, dist1)
+plt.xlabel('Asset Value')
+plt.ylabel('Frequency')
+plt.title('Asset Distribution')
+plt.show()
+
+
+# Monte-Carlo simulation for asset distribution and gini
+T = 1000000
+mc = hh.mc
+k = hh.k
+sim = hh.mc.simulate_indices(T, init = int((nz-1)/2))
+@jit
+def simulate(mc, indk, l = sim, k = k, N = 5000, T = T):
+    nz  = np.shape(mc.P)[0]
+    T   = np.shape(l)[0]
+    m   = T/N
+    ind = np.zeros(N)
+    for n in range(N):
+        l  = np.concatenate((l[int(n*m):T],l[0:int(n*m)]))
+        temp = indk[int((nz-1)/2),int(nk/2)]
+        for t in range(T):
+            temp   = indk[int(l[t]),int(temp)]
+        ind[n] = temp
+    a = k[np.int64(ind)]
+    return a
+
+
 # Generate a new distribution
-dist = simulate(hh,indk)
+dist2 = simulate(mc,indk,N = 10000)
 
 
 # Plot the distribution
 plt.figure(figsize = (15,10))
-n, bins, patches = plt.hist(x=dist, bins='auto', color='#0504aa',alpha=0.7, rwidth=0.85,histtype="stepfilled")
+n, bins, patches = plt.hist(x=dist2, bins='auto', color='#0504aa',alpha=0.7, rwidth=0.85,histtype="stepfilled")
 plt.xlabel('Asset Value')
 plt.ylabel('Frequency')
 plt.title('Asset Distribution')
@@ -225,6 +269,7 @@ def gini(x):
     return g
 
 
+# Print the output (2.28)
 print("\nThe equilibrium interest rate is %F." % (r*100))
 print("Solving the model took %F minutes." %((stop - start)/60))
-print("The gini coefficient for the distribution is %F." %(gini(dist)))
+print("The gini coefficient for the distribution is %F." %(gini(dist2)))
