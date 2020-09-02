@@ -3,7 +3,7 @@
 
 These spyder-files contain my (amateur) approach to solve macroeconomic models using Python. The code is not written for being elegant, neither for speed, therefore, optimization is needed and comments are welcome. I only code to learn the concepts and make first experience with solving these models.
 
-A large part of the code is based on two resources:
+A large part of the code is based on the following resources:
 
 - Introduction to computational economics using fortran by Fehr and Kindermann, 2018
 - João B. Duarte's Ph.D. course on Macro in Python (https://github.com/jbduarte/Advanced_Macro)
