@@ -14,9 +14,9 @@ from numba import jit
 
 
 class HH:
-    """Setups a class containing all necessary information to solve the
-       Aiyagari (1994) model.
-    
+    """
+    Setups a class containing all necessary information to solve the
+    Aiyagari (1994) model.
     """
 
     def __init__(self, theta=0.36, delta=0.08, sigma=3,
@@ -54,13 +54,13 @@ class HH:
     def r_to_w(self, r):
         """Transforms an interest rate into a wage rate"""
         return (1 - self.theta) * ((self.theta / (r + self.delta))
-                )**(self.theta / (1 - self.theta))
+                                   )**(self.theta / (1 - self.theta))
 
     def markov(self):
         """Approximates the transistion probability of an AR(1) process
            using the methodology of Tauchen (1986) using the quantecon package
-        
-           Uses the states, and the transition matrix to give back the 
+
+           Uses the states, and the transition matrix to give back the
            transition matrix P, as well as invariante labor supply l_s
         """
         self.mc = qe.markov.approximation.tauchen(self.rho, self.stdz,
@@ -91,11 +91,11 @@ k_t = hh.interest_reverse(r)
 @jit
 def get_policy(V, r, HH):
     """Given a value function V, an interest rate r, as well as a HH class,
-       the function computes a new policy function g, as well as the 
+       the function computes a new policy function g, as well as the
        corresponding indicator function indk"""
     # Unpacking of parameters
     nz, nk, P = HH.nz, HH.nk, HH.P
-    l, k = HH.labor_states, HH.k
+    labor, k = HH.labor_states, HH.k
     beta = HH.beta
     R = 1 + r
     w = HH.r_to_w(r)
@@ -106,7 +106,7 @@ def get_policy(V, r, HH):
     for iz in range(nz):
         for ik in range(nk):
             # Calculating consumption and its corresponding utility
-            c = w * l[iz] + R * k[ik] - k
+            c = w * labor[iz] + R * k[ik] - k
             u = HH.utility(c)
             # Penalize negative consumption
             u[c < 0] = -1000000
@@ -138,7 +138,7 @@ def get_J(g, HH):
 @jit
 def get_Q(P, J):
     """Given the transition matrix P and the J matrix from the get_J function
-       this function gives back the stochastic transition matrix Q as in 
+       this function gives back the stochastic transition matrix Q as in
        Ljungqvist and Sargent (2012)."""
     # Setup empty matrices
     shape1 = np.shape(P)[0]
@@ -179,7 +179,7 @@ def reward(r, HH, g):
     nk, nz, k, labor_states = HH.nk, HH.nz, HH.k, HH.labor_states
     w = hh.r_to_w(r)
     # Calculate the utility
-    re = hh.utility((1 + r) * k.reshape(1, nk) + w 
+    re = hh.utility((1 + r) * k.reshape(1, nk) + w
                     * labor_states.reshape(nz, 1) - g)
     # Transform into the required format for the function
     return re.flatten()
@@ -188,8 +188,8 @@ def reward(r, HH, g):
 # Policy function iteration
 def policy(g, r, HH, maxiter=1000, tol=10**(-11)):
     """Given a guess for the policy function g, an interest rate r, and
-       an instance of the HH class, the function performs a full policy 
-       function iteration and solves for a new policy function g, value 
+       an instance of the HH class, the function performs a full policy
+       function iteration and solves for a new policy function g, value
        function v, and indicator function indk.
        """
     error = 1
@@ -212,12 +212,12 @@ def policy(g, r, HH, maxiter=1000, tol=10**(-11)):
 
         # Extract a policy function
         gnew, indk = get_policy(v, r, HH)
-        
+
         # Compute error for this iteration
         error = np.linalg.norm(gnew - g)
         g = np.copy(gnew)
         iter = iter + 1
-        
+
         # Generate new test criteria
         test1 = (error > tol)
         test2 = (iter < maxiter)
@@ -244,7 +244,7 @@ def distribution(indk, HH, tol=10**(-11), maxiter=10000):
         distnew = np.zeros((nz, nk))
         for j in range(nk):
             for i in range(nz):
-                # Next periods distribution is the cummulative of the 
+                # Next periods distribution is the cummulative of the
                 # households which migrate through the policy function and
                 # through stochastic transition
                 distnew[:, int(indk[i, j])] = distnew[:, int(
@@ -262,7 +262,7 @@ def distribution(indk, HH, tol=10**(-11), maxiter=10000):
 @jit
 def Aiyagari(k_t, HH):
     """Function that completely solves the Aiyagari (1994) model"""
-    
+
     # Unpacking parameters and setting up matrices
     beta = HH.beta
     iter = 0
@@ -344,7 +344,7 @@ dist1 = np.sum(dist1, axis=0)
 
 # Density function
 plt.figure(figsize=(15, 10))
-plt.plot(hh.k, dist1*100000)
+plt.plot(hh.k, dist1)
 plt.xlabel('Asset Value')
 plt.ylabel('Frequency')
 plt.title('Asset Distribution')
@@ -358,7 +358,7 @@ k = hh.k
 sim = hh.mc.simulate_indices(T, init=int((nz - 1) / 2))
 @jit
 def simulate(mc, indk, labor_sim=sim, k=k, N=10000, T=T):
-    """Simulate a cross-section of households over time to derive an 
+    """Simulate a cross-section of households over time to derive an
        invariante distribution of households assets for later plotting."""
     nz = np.shape(mc.P)[0]
     m = T / N
