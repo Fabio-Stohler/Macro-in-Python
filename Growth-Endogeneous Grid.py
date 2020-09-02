@@ -26,9 +26,9 @@ class HH():
         self.c_ss  = self.k_ss*(1-beta*(1-delta)-beta*theta*delta)/(beta*theta)
         
         #discretizing the k grid
-        kmin = 0.8*self.k_ss
-        kmax = 1.2*self.k_ss
-        self.k = np.linspace(kmin,kmax,self.nk)
+        self.kmin = 0.5*self.k_ss
+        self.kmax = 1.5*self.k_ss
+        self.k = np.linspace(self.kmin,self.kmax,self.nk)
         
     def utiltiy(self, c):
         """Utility function, dependent on consumption c and sigma"""
@@ -53,65 +53,99 @@ class HH():
 
 
 # Generating a HH class:
-hh = HH(nk=400)
+hh = HH(nz = 21, nk=250)
 mc, P, zs = hh.markov()
 
 
-#Value function iteration function
-@jit
-def value_function(HH, tolv=10**(-8), maxiter=5000):
-    """
-    Value function iteration that, given a class of HH solves for the 
-    optimal value function, and its associated policy function.
-    """
-    # Extracting the values
-    theta, beta, delta, sigma = HH.theta, HH.beta, HH.delta, HH.sigma
-    nz, nk, zs, k, P = HH.nz, HH.nk, HH.zs, HH.k, HH.P
-    c_ss = HH.c_ss
+import scipy.interpolate as interp
+def numerical(value, capital, h = 0.01):
+    size = np.shape(value)[0]
+    der  = np.copy(value)
+    y_app = interp.interp1d(capital, value)
+    for i in range(size):
+        if i == 0:
+            der[i] = ((y_app(capital[i+1])-y_app(capital[i]))/(capital[i+1]-capital[i]))
+        elif i == (size-1):
+            der[i] = ((y_app(capital[i])-y_app(capital[i-1]-h))/(capital[i]-capital[i-1]))
+        else:
+            der[i] = ((y_app(capital[i+1])-2*y_app(capital[i])+y_app(capital[i-1]))/(capital[i+1]-2*capital[i]+capital[i-1]))
+    return der
+
+
+
+# Defining a numerical derivative function for an array
+# If convergence in the algorithm does not occure, we need to update here
+# Actual formular for derivative: f(x+h) - f(x-h) / 2h
+def numerical(value, capital):
+    size = np.shape(value)[0]
+    der  = np.copy(value)
+    for i in range(size):
+        if i == 0:
+            der[i] = ((value[1] - value[0])/(capital[1] - capital[0]))
+        elif i == (size-1):
+            der[i] = ((value[i] - value[i-1])/(capital[i] - capital[i-1]))
+        else:
+            der[i] = ((value[i+1] - value[i-1])/(capital[i+1]-capital[i-1]))
+    return der
+
+
+
+
+# Generating the grids
+tol = 10**(-6)
+maxiter = 100
+iter, diff = 0, 10
+kmax, kmin = hh.kmax, hh.kmin
+nz, nk, Gk = hh.nz, hh.nk, hh.k
+theta, beta, delta, sigma = hh.theta, hh.beta, hh.delta, hh.sigma
+cap, states = np.meshgrid(hh.k, hh.zs)
+Gy = states*cap**theta + (1-delta)*cap
+
+# Initial guess for the value function
+Vtilde = cap**(0.5)*states
+Vtilde_new = np.copy(Vtilde)
+Vtilde_prime = np.copy(Vtilde)
+V = np.copy(Vtilde)
+
+test1 = (diff > tol)
+test2 = (iter < maxiter)
+maxiter = 5
+while (test1 and test2):
+    iter += 1
+    # Numerical derivate of the policy function and optimal consumption
+    Vtilde_prime = np.zeros((nz,nk))
+    Vtilde_prime[:,1:nk] += np.diff(Vtilde)
+    Vtilde_prime[:,0:nk-1] += np.diff(Vtilde)
+    Vtilde_prime[:,1:nk-1] = Vtilde_prime[:,1:nk-1]/(2*(kmax-kmin)/nk)
     
-    start = time.time()
-    # Setting up the initial problem
-    u    = c_ss**(1-sigma)/(1-sigma)
-    V    = np.ones((nz,nk))*u/(1-beta)
-    v    = np.zeros((nz,nk))
-    g    = np.zeros((nz,nk))
-    newV = np.zeros((nz,nk))
-    iter    = 0
-    diffV   = 10
-    # Checking the continuation criteria
-    test1 = (iter < maxiter)
-    test2 = (diffV > tolv)
-    while (test1 and test2):
-        iter = iter+1
-        for iz in range(0,nz):
-            for ik in range(0,nk):
-                c = zs[iz]*k[ik]**theta+(1-delta)*k[ik]-k
-                u = c**(1-sigma)/(1-sigma)
-                u[c<0]= -1000000000
-                v = u+beta*(np.dot(P[iz,:],V))
-                newV[iz,ik] = max(v)
-                ind         = np.argmax(v)
-                g[iz,ik]    = k[ind]
-        diffV = np.linalg.norm(newV-V)
-        V = newV.copy()
-        print(iter, diffV)
-        test1 = (iter<maxiter)
-        test2 = (diffV>tolv)
-    stop = time.time() 
-    print("\nValue function iteration converged after %.0F iterations and %.5F seconds" % (iter, (stop-start)))
-    return V, g
+    cprime = Vtilde_prime**(-1/sigma)
+    Yend = cprime + Gk
+    Vend = cprime**(1-sigma)/(1-sigma) + Vtilde
+    
+    for i in range(nz):
+        V[i,:] = np.interp(Gy[i,:], Yend[i,:], Vend[i,:])
+    
+    for i in range(nz):
+        for j in range(nk):
+            Vtilde_new[i,j] = beta*np.dot(P[i,:], V[:,j])
+    
+    diff = np.linalg.norm(Vtilde_new - Vtilde)
+    Vtilde = Vtilde_new
+    test1 = (diff > tol)
+    test2 = (iter < maxiter)
+    print(iter, diff)
 
 
 # Running the function
-V, g = value_function(hh)
+
        
 
-#Plotting the value and policy function                 
+#print(toc-tic)                 
 fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(15,10))
 axes[0].plot(hh.k,V.transpose())
 axes[0].set_title("Value functions")
 
-axes[1].plot(hh.k,g.transpose())
+axes[1].plot(hh.k,cprime.transpose())
 axes[1].plot(hh.k,hh.k)
 axes[1].set_title('Policy functions')
 plt.show()
@@ -122,7 +156,7 @@ plt.savefig("convergence.png")
 T = 5000
 
 
-# Setup the arrays for the later simulation
+# Setup the arrays
 A = hh.mc.simulate(T, init = mc.state_values[int((hh.nz-1)/2)])
 Aind = mc.get_index(A)
 A = np.exp(A)
@@ -141,7 +175,7 @@ cons = out - g[np.int64(Aind),np.int64(Kind)] + (1-hh.delta)*K
 inv = out - cons
 
 
-# Plot the simulation of the economy
+# Plot the development of the economy
 t = range(T)
 fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(15,10))
 
