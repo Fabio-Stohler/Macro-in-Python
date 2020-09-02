@@ -1,5 +1,0 @@
-- Make all the things into Spyder files
-- Finish Markov approximation
-- Work over Solving RE models
-- When the Solution methods work well (vectorization, and speeding up), use them to solve the 
-deterministic growth model, as well as the stochastic growth model, later on.

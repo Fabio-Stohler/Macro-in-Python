@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 """
-Spyder Editor
 
 This solves the Aiyagari model with value function iteration.
 It uses Monte-Carlo simulation to aggregate the economy.
 
 """
+
 
 import numpy as np
 import time
@@ -17,15 +16,15 @@ from numba import jit
 #parameters
 theta = 0.36 
 delta = 0.08
-sigma = 3
+sigma = 5
 beta  = 0.96
 nz    = np.int(7)
-rho   = 0.9
+rho   = 0.6
 stdev = 0.2
 stdz  = stdev*(1-rho**2)**(1/2)
 m     = 3
-nk   = np.int(150)
-
+nk   = np.int(500)
+ 
 
 #discretizing the grid
 mc = qe.markov.approximation.tauchen(rho,stdz,0,m,nz)
@@ -44,7 +43,7 @@ sim = mc.simulate_indices(T, init = int((nz-1)/2))
 #discretizing the k grid
 k_ss  = ((beta*theta)/(1-beta*(1-delta)))**(1/(1-theta))
 kmin = 10**(-5)
-kmax = 18
+kmax = 50
 k = np.zeros(nk)
 for i in range(nk):
     k[i] = kmin + kmax/((nk+1)**2.35)*(i**2.35)
@@ -137,7 +136,7 @@ def Aiyagari(l, k_t):
         print("The error in iteration %.0F is %F." % (iter, error))
         print("The capital supply is %F, and the interest rate is %F." %(k_s, r*100))
         print("Value function and simulation took %.3F and %.3F seconds respectively" % ((stop1-start1), (stop2-start2)))
-        k_t = 0.95*k_t + 0.05*k_s
+        k_t = 0.99*k_t + 0.01*k_s
     print("\nThe equilibrium interest rate is %F." % (r*100))
     # Das Ziel sollte 3.87 sein 
     # Resultat war 3.6498 (Check against QE results)
