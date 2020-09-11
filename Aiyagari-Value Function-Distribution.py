@@ -13,13 +13,21 @@ import matplotlib.pyplot as plt
 import quantecon as qe
 from numba import jit
 
+# Supress warning
+import warnings
+warnings.filterwarnings("ignore")
+
 
 class HH:
+    """
+    Setups a class containing all necessary information to solve the
+    Aiyagari (1994) model.
+    """
     
     def __init__(self, theta = 0.36, delta = 0.08, sigma = 3, 
                  beta = 0.96, nz = 7, rho = 0.9, stdev = 0.2,
                  m = 3, nk = 500, kmin = 10**(-5), kmax = 50):
-        
+        """Initialize the class with standard parameters"""
         # Setup parameters
         self.theta, self.delta, self.sigma = theta, delta, sigma
         self.beta, self.nz, self.nk, self.m = beta, nz, nk, m
@@ -33,6 +41,7 @@ class HH:
             self.k[i] = kmin + kmax/((nk+1)**2.35)*(i**2.35)
         
     def utility(self, c):
+        """Utility function depending on the value of sigma"""
         if self.sigma == 1:
             u = np.log(c)
         else:
@@ -40,15 +49,24 @@ class HH:
         return u
     
     def interest(self,k):
+        """Gives back the interest rate, given a capital supply"""
         return self.theta*(k/self.l_s)**(self.theta-1) - self.delta
     
     def interest_reverse(self,r):
+        """Given an interest rate, gives back the capital demand"""
         return (self.theta/(r+self.delta))**(1/(1-self.theta))*self.l_s
     
     def r_to_w(self, r):
+        """Given an interest rate, the function calculates the wage"""
         return (1-self.theta)*((self.theta/(r+self.delta)))**(self.theta/(1-self.theta))
     
     def markov(self):
+        """Approximates the transistion probability of an AR(1) process
+           using the methodology of Tauchen (1986) using the quantecon package
+
+           Uses the states, and the transition matrix to give back the
+           transition matrix P, as well as invariante labor supply l_s
+        """
         self.mc = qe.markov.approximation.tauchen(self.rho,self.stdz,
                                              0,self.m,self.nz)
         self.P = self.mc.P
@@ -67,7 +85,7 @@ rho = 0.6
 hh = HH(nz = nz, nk = nk, rho = rho, sigma = sigma)
 
 
-# Current level
+# Current level of initial guess
 P, l_s = hh.markov()
 r = (3.87-1)/100
 k_t = hh.interest_reverse(r)
@@ -76,6 +94,9 @@ k_t = hh.interest_reverse(r)
 #Value function iteration
 @jit 
 def Value(r, HH):
+    """Given a guess for the interest rate, and a HH class the function
+       calculates a optimal policy function, as well as the associated
+       value function and indicator function."""
     sigma, beta, P = HH.sigma, HH.beta, HH.P
     l, k = HH.l, HH.k
     w = hh.r_to_w(r)
@@ -114,7 +135,10 @@ def Value(r, HH):
 # Calculating the invariate distribution
 @jit
 def distribution(indk, HH, tol = 10**(-11), maxiter = 50000):
-    
+    """Given an indicator function indk, and an instance of a household HH,
+       the function calculates an invariante distribution of households over
+       the asset and productivity space.
+    """
     P, nz, nk = HH.P, HH.nz, HH.nk
     dist = np.ones((nz,nk))/(nz*nk)
     
@@ -138,6 +162,7 @@ def distribution(indk, HH, tol = 10**(-11), maxiter = 50000):
 # Function to solve for the equilibrium
 @jit
 def Aiyagari(k_t,HH):
+    """Function that completely solves the Aiyagari (1994) model"""
     beta, k = HH.beta, HH.k
     
     iter    = 0
