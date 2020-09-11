@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """
-Spyder Editor
 
-This solves the RBC model with value function iteration and exogenous labor
-supply
+This solves the RBC model with endogeneous labor supply
+with the howard improvement algorithm
 
 """
 
@@ -13,6 +11,10 @@ import matplotlib.pyplot as plt
 import quantecon as qe
 import scipy.optimize as opt
 from numba import jit
+
+# Supress warning
+import warnings
+warnings.filterwarnings("ignore")
 
 
 #parameters
@@ -27,7 +29,7 @@ rho   = 0.95;
 stdz  = np.sqrt(0.000049);
 m     = 3;
 sims  = 10;
-nk   = np.int(150);
+nk   = np.int(250);
 
 #discretizing the grid
 mc = qe.markov.approximation.tauchen(rho,stdz,0,m,nz)
