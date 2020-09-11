@@ -14,6 +14,10 @@ import scipy.optimize as opt
 import quantecon as qe
 from numba import jit
 
+# Supress warning
+import warnings
+warnings.filterwarnings("ignore")
+
 
 #parameters
 theta = 0.4; 
