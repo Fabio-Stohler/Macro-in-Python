@@ -12,6 +12,10 @@ import matplotlib.pyplot as plt
 import quantecon as qe
 from numba import jit
 
+# Supress warning
+import warnings
+warnings.filterwarnings("ignore")
+
 
 class HH:
     """
@@ -86,7 +90,7 @@ rho = 0.6
 hh = HH(nz=nz, nk=nk, rho=rho, sigma=sigma)
 
 
-# Current level
+# Current level of initial guess
 P, l_s, sim = hh.markov()
 r = (3.87 - 1) / 100
 k_t = hh.interest_reverse(r)
