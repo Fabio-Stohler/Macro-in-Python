@@ -15,7 +15,7 @@ from scipy.interpolate import interp1d
 
 class HH():
     
-    def __init__(self,theta = 0.36, beta = 0.99, delta = 0.025, sigma = 1, nk = 500):
+    def __init__(self,theta = 0.4, beta = 0.99, delta = 0.019, sigma = 1, nk = 500):
         """Initialize the class with standard parameters"""
         self.theta, self.beta, self.delta = theta, beta, delta
         self.sigma, self.nk =  sigma, nk
