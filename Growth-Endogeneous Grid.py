@@ -10,6 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import quantecon as qe
 from numba import jit
+from scipy.optimize import fsolve
+from scipy.interpolate import Rbf, RectBivariateSpline
 
 
 class HH():
@@ -26,8 +28,8 @@ class HH():
         self.c_ss  = self.k_ss*(1-beta*(1-delta)-beta*theta*delta)/(beta*theta)
         
         #discretizing the k grid
-        self.kmin = 0.5*self.k_ss
-        self.kmax = 1.5*self.k_ss
+        self.kmin = 0.75*self.k_ss
+        self.kmax = 1.25*self.k_ss
         self.k = np.linspace(self.kmin,self.kmax,self.nk)
         
     def utiltiy(self, c):
@@ -57,87 +59,39 @@ hh = HH(nz = 21, nk=250)
 mc, P, zs = hh.markov()
 
 
-import scipy.interpolate as interp
-def numerical(value, capital, h = 0.01):
-    size = np.shape(value)[0]
-    der  = np.copy(value)
-    y_app = interp.interp1d(capital, value)
-    for i in range(size):
-        if i == 0:
-            der[i] = ((y_app(capital[i+1])-y_app(capital[i]))/(capital[i+1]-capital[i]))
-        elif i == (size-1):
-            der[i] = ((y_app(capital[i])-y_app(capital[i-1]-h))/(capital[i]-capital[i-1]))
-        else:
-            der[i] = ((y_app(capital[i+1])-2*y_app(capital[i])+y_app(capital[i-1]))/(capital[i+1]-2*capital[i]+capital[i-1]))
-    return der
 
-
-
-# Defining a numerical derivative function for an array
-# If convergence in the algorithm does not occure, we need to update here
-# Actual formular for derivative: f(x+h) - f(x-h) / 2h
-def numerical(value, capital):
-    size = np.shape(value)[0]
-    der  = np.copy(value)
-    for i in range(size):
-        if i == 0:
-            der[i] = ((value[1] - value[0])/(capital[1] - capital[0]))
-        elif i == (size-1):
-            der[i] = ((value[i] - value[i-1])/(capital[i] - capital[i-1]))
-        else:
-            der[i] = ((value[i+1] - value[i-1])/(capital[i+1]-capital[i-1]))
-    return der
-
-
-
-
-# Generating the grids
-tol = 10**(-6)
+# Setting up stuff
+nz, nk, beta, sigma = hh.nz, hh.nk, hh.beta, hh.sigma
+k, l_states = hh.k, hh.zs
+capital, states = np.meshgrid(k, l_states)
+Gy = states*capital**hh.theta + (1-hh.delta)*capital
+Gyend = np.copy(Gy)
+kend = np.copy(Gy)
+interest = hh.theta*states*capital**(hh.theta-1) + (1-hh.delta)
+g = Gy
+g_new = np.copy(g)
+g_inter = Rbf(capital, states, g)
+tol = 10**(-4)
 maxiter = 100
-iter, diff = 0, 10
-kmax, kmin = hh.kmax, hh.kmin
-nz, nk, Gk = hh.nz, hh.nk, hh.k
-theta, beta, delta, sigma = hh.theta, hh.beta, hh.delta, hh.sigma
-cap, states = np.meshgrid(hh.k, hh.zs)
-Gy = states*cap**theta + (1-delta)*cap
-
-# Initial guess for the value function
-Vtilde = cap**(0.5)*states
-Vtilde_new = np.copy(Vtilde)
-Vtilde_prime = np.copy(Vtilde)
-V = np.copy(Vtilde)
-
-test1 = (diff > tol)
-test2 = (iter < maxiter)
-maxiter = 5
-while (test1 and test2):
+error = 1
+iter = 0
+test1 = (maxiter > iter)
+test2 = (error > tol)
+while test1 and test2:
     iter += 1
-    # Numerical derivate of the policy function and optimal consumption
-    Vtilde_prime = np.zeros((nz,nk))
-    Vtilde_prime[:,1:nk] += np.diff(Vtilde)
-    Vtilde_prime[:,0:nk-1] += np.diff(Vtilde)
-    Vtilde_prime[:,1:nk-1] = Vtilde_prime[:,1:nk-1]/(2*(kmax-kmin)/nk)
-    
-    cprime = Vtilde_prime**(-1/sigma)
-    Yend = cprime + Gk
-    Vend = cprime**(1-sigma)/(1-sigma) + Vtilde
-    
-    for i in range(nz):
-        V[i,:] = np.interp(Gy[i,:], Yend[i,:], Vend[i,:])
-    
     for i in range(nz):
         for j in range(nk):
-            Vtilde_new[i,j] = beta*np.dot(P[i,:], V[:,j])
+            g_new[i,j] = (beta*np.dot(P[i,:], interest[:,j]*g[:,j]**(-sigma)))**(-1/sigma)
+            Gyend[i,j] = g_new[i,j] + capital[i,j]
+            res = lambda k: Gyend[i,j] - states[i,j]*k**(hh.theta) - (1-hh.delta)*k
+            kend[i,j] = fsolve(res, hh.k_ss)
     
-    diff = np.linalg.norm(Vtilde_new - Vtilde)
-    Vtilde = Vtilde_new
-    test1 = (diff > tol)
-    test2 = (iter < maxiter)
-    print(iter, diff)
-
-
-# Running the function
-
+    g_inter = RectBivariateSpline(kend, states, g_new)
+    error = np.linalg.norm(g_inter(capital, states) - g)
+    g = g_inter(capital, states)
+    test1 = (maxiter > iter)
+    test2 = (error > tol)
+    print(iter, error)
        
 
 #print(toc-tic)                 
@@ -145,7 +99,7 @@ fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(15,10))
 axes[0].plot(hh.k,V.transpose())
 axes[0].set_title("Value functions")
 
-axes[1].plot(hh.k,cprime.transpose())
+axes[1].plot(hh.k,sigma.transpose())
 axes[1].plot(hh.k,hh.k)
 axes[1].set_title('Policy functions')
 plt.show()
