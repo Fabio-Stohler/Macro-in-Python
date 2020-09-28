@@ -10,7 +10,7 @@ A large part of the code is based on the following resources:
 - Recursive Macroeconomic Theory by Sargent and Ljungqvist, 2012
 - Dynamic General Equilibrium Modeling by Herr and Maussner, 2009
 
-I am currently working on a solution to Krusell and Smith (1998) and endogeneous grid methods. Currently the codes include:
+I am currently working on a solution to Krusell and Smith (1998) and endogeneous grid methods. At the moment the codes include:
 
 - Simple stochastic growth model (Value function iteration and Howard improvement algorithm)
 - Simple RBC model with labor choice (Value function iteration and Howard improvement algorithm)
