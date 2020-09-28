@@ -21,7 +21,6 @@ theta = 0.4
 delta = 0.019
 sigma = 2
 beta  = 0.99
-nk    = 100
 nz    = 21
 rho   = 0.95
 stdz  = 0.007
