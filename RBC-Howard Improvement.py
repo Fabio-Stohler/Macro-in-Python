@@ -1,8 +1,8 @@
 """
 
 This solves the RBC model with endogeneous labor supply
-with the howard improvement algorithm
-
+with the howard improvement algorithm as illustrated in
+Ljungqvist and Sargent (2012), p. 106
 """
 
 import time
@@ -23,7 +23,6 @@ delta = 0.019;
 sigma = 2;
 vega  = 0.36;
 beta  = 0.99;
-nk    = 100;
 nz    = np.int(21);
 rho   = 0.95;
 stdz  = np.sqrt(0.000049);
@@ -75,6 +74,7 @@ for iz in range(nz):
             labor[iz,ik,jk] = opt.fsolve(res, l_ss)
             consumption[iz,ik,jk] = vega/(1-vega)*(1-labor[iz,ik,jk])*(1-theta)*(k[ik]/labor[iz,ik,jk])**(theta)
 stops = time.time()
+print("Interpolation completed after %F seconds." %(stops - starts))
 
 
 # Function to search nearest value on the grid
