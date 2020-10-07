@@ -73,6 +73,7 @@ class HH:
         self.labor_states = np.exp(self.mc.state_values)
         inv_l = np.linalg.matrix_power(self.P, 1000)
         inv_dist = inv_l[0, :]
+        inv_l = inv_l / inv_l.sum()
         self.l_s = np.dot(self.labor_states, inv_dist)
         return self.P, self.l_s
 
