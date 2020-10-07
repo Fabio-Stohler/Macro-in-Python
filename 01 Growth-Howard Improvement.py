@@ -136,7 +136,6 @@ axes[1].plot(k,g.transpose())
 axes[1].plot(k,k)
 axes[1].set_title('Policy functions')
 plt.show()
-plt.savefig("convergence.png")
 
 
 # Simulate the economy
@@ -181,7 +180,6 @@ axes[1].set_xlabel("Period")
 axes[1].set_ylabel("GDP components")
 axes[1].legend(loc=5)
 plt.show()
-plt.savefig("simulation.png")
 
 
 # Print the stochastic properties of the economy
