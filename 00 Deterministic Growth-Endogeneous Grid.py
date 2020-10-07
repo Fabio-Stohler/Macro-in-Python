@@ -81,7 +81,8 @@ while test1 and test2:
     g = g_inter(k)
     test1 = (maxiter > iter)
     test2 = (error > tol)
-    print(iter, error)
+    if iter % 50 == 0:
+        print(iter, error)
 stop1 = time.time()
 print("\nEGM converged after %F seconds and %.0F iterations." % ((stop1-start1),iter))
 
