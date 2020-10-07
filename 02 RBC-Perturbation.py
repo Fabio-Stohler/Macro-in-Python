@@ -26,7 +26,7 @@ beta = 0.99
 gamma = 2
 vega = 0.36
 delta = 0.019
-rho = 0.95
+rho = 0.99
 
 
 # Defining a function, which gives back the steady state
