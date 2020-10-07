@@ -72,7 +72,7 @@ class HH():
 
 
 # Generating a HH class:
-hh = HH(nz = 21, nk=250)
+hh = HH(nz = 21, nk=500)
 mc, P, zs = hh.mc, hh.P, hh.zs
 
 
