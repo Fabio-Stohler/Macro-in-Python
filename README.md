@@ -13,6 +13,6 @@ A large part of the code is based on the following resources:
 
 I am currently working on a solution to Krusell and Smith (1998) and endogeneous grid methods. At the moment the codes include:
 
-- Simple stochastic growth model (Value function iteration, Howard improvement algorithm, and Perturbation)
+- Simple stochastic growth model (Value function iteration, Howard improvement algorithm, Endogeneous Grid method, and Perturbation)
 - Simple RBC model with labor choice (Value function iteration, Howard improvement algorithm, and Perturbation)
-- Aiyagari model with aggregation using Monte Carlo and an invariante distribution (Value function iteration, and Howard improvement algorithm)
+- Aiyagari model with aggregation using Monte Carlo simulation and an invariante distribution (Value function iteration, and Howard improvement algorithm)
