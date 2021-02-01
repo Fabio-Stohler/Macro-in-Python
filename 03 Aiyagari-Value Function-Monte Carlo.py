@@ -231,8 +231,8 @@ axes[0].set_title("Value functions")
 axes[1].plot(hh.k, g.transpose())
 axes[1].plot(hh.k, hh.k)
 axes[1].set_title('Policy functions')
-plt.show()
-plt.savefig("convergence.png")
+#plt.show()
+#plt.savefig("convergence.png")
 
 
 # Generate a new distribution
@@ -247,7 +247,7 @@ plt.xlabel('Asset Value')
 plt.ylabel('Frequency')
 plt.title('Asset Distribution')
 plt.show()
-plt.savefig("distribution.png")
+#plt.savefig("distribution.png")
 
 
 # Function for the gini coefficient

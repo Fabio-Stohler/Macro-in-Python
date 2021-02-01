@@ -162,7 +162,7 @@ axes[0].set_title("Value functions")
 axes[1].plot(k,g.transpose())
 axes[1].plot(k,k)
 axes[1].set_title('Policy functions')
-plt.show()
+#plt.show()
 #plt.savefig("convergence.png")
 
 

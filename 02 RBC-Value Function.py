@@ -118,8 +118,8 @@ axes[0].set_title("Value functions")
 axes[1].plot(k,g.transpose())
 axes[1].plot(k,k)
 axes[1].set_title('Policy functions')
-plt.show()
-plt.savefig("convergence.png")
+#plt.show()
+#plt.savefig("convergence.png")
 
 
 # Simulate the economy
@@ -164,7 +164,7 @@ axes[1].set_xlabel("Period")
 axes[1].set_ylabel("GDP components")
 axes[1].legend(loc=5)
 plt.show()
-plt.savefig("simulation.png")
+#plt.savefig("simulation.png")
 
 
 print("\nThe stochastic steady state is %F, with the true being %F" % (np.mean(K), k_ss))

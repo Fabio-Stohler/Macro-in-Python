@@ -3,7 +3,7 @@
 Spyder Editor
 
 This solves the Aiyagari model with value function iteration.
-It uses Monte-Carlo simulation to aggregate the economy.
+It uses the invariante simulation to aggregate the economy.
 
 """
 
@@ -227,8 +227,8 @@ axes[0].set_title("Value functions")
 axes[1].plot(hh.k,g.transpose())
 axes[1].plot(hh.k,hh.k)
 axes[1].set_title('Policy functions')
-plt.show()
-plt.savefig("convergence.png")
+#plt.show()
+#plt.savefig("convergence.png")
 
 
 # Generating the distribution
@@ -277,7 +277,7 @@ plt.xlabel('Asset Value')
 plt.ylabel('Frequency')
 plt.title('Asset Distribution')
 plt.show()
-plt.savefig("distribution.png")
+#plt.savefig("distribution.png")
 
 
 # Function for the gini coefficient
