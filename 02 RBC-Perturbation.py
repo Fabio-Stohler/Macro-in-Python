@@ -163,7 +163,7 @@ for i in range(nX):
     axes[row, col].plot(np.zeros(T))
     axes[row, col].set_title(names[i])
 fig.tight_layout()
-plt.show()
+#plt.show()
 
 
 # Comparison of the volatility of real variables and the model variables
