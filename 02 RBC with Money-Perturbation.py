@@ -142,6 +142,7 @@ P, Q = SolveSystem(A,B,C,E)
 # Calculate an impulse response for a real monetary shock
 T = 40
 IRF_RBC = np.zeros((nX,T))
+# First shock is productivity and second shock is monetary
 shock = np.array((0,0.01))
 IRF_RBC[:,0] = np.transpose(Q @ shock)
 
