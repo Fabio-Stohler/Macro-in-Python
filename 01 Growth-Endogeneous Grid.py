@@ -191,7 +191,6 @@ for ik in range(nk):
 
 
 # Extracting the value function to G
-@jit
 def Value(C,indk, maxiter = 1000, tol = 10**(-8)):
     start = time.time()
     error = 1
