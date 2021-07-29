@@ -26,10 +26,11 @@ beta = 0.99
 gamma = 2
 vega = 0.36
 delta = 0.019
-rho = 0.97
-rho_g = 0.95
+rho = 0.95
+rho_g = 0.9
 omega = 0.2
-
+sigma_z = np.sqrt(0.000049)
+sigma_g = np.sqrt(0.000009)
 
 # Defining a function, which gives back the steady state
 def SteadyState():
@@ -174,14 +175,14 @@ fig.tight_layout()
 
 
 # Comparison of the volatility of real variables and the model variables
-sigma = np.sqrt(0.000049)
-T = 5000
+T = 50000
 TT = 500 # Periods that are plotted in the end
 # Defining empty matrices for simulation and drawing shocks
 SIM_RBC = np.zeros((nX,T))
-eps_g_t = np.random.normal(0,sigma,T)
-eps_z_t = np.random.normal(0,sigma,T)
-eps_t = np.transpose(np.array((eps_z_t, eps_g_t)))
+mean = np.array([0,0])
+cov = np.array([[sigma_z,-0.0005],[-0.0005, sigma_g]])
+eps_t = np.random.multivariate_normal(mean,cov,T)
+
 # Calculating the intercept for the simulation
 intercept = (np.eye(nX) - P)@X_SS
 # Initialize the variables at their steady state
