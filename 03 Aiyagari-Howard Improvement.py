@@ -329,7 +329,6 @@ V, g, indk, dist, r = Aiyagari(k_t, hh)
 stop = time.time()
 print("Solving the model took %F minutes." % ((stop - start) / 60))
 
-
 # Plot the value function and the policy function
 fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(15, 10))
 axes[0].plot(hh.k, V.transpose())
