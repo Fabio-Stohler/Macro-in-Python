@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import warnings
 
 
+
 # Number of Variables
 nX = 9
 # Number of shocks
