@@ -11,13 +11,16 @@ import matplotlib.pyplot as plt
 import quantecon as qe
 from numba import jit
 
+# Supress warning
+import warnings
+warnings.filterwarnings("ignore")
+
 
 #parameters
 theta = 0.4
 delta = 0.019
 sigma = 2
 beta  = 0.99
-nk    = 100
 nz    = 21
 rho   = 0.95
 stdz  = 0.007
@@ -133,7 +136,6 @@ axes[1].plot(k,g.transpose())
 axes[1].plot(k,k)
 axes[1].set_title('Policy functions')
 plt.show()
-plt.savefig("convergence.png")
 
 
 # Simulate the economy
@@ -178,7 +180,6 @@ axes[1].set_xlabel("Period")
 axes[1].set_ylabel("GDP components")
 axes[1].legend(loc=5)
 plt.show()
-plt.savefig("simulation.png")
 
 
 # Print the stochastic properties of the economy

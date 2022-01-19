@@ -12,6 +12,10 @@ import matplotlib.pyplot as plt
 import quantecon as qe
 from numba import jit
 
+# Supress warning
+import warnings
+warnings.filterwarnings("ignore")
+
 
 class HH:
     """
@@ -69,6 +73,7 @@ class HH:
         self.labor_states = np.exp(self.mc.state_values)
         inv_l = np.linalg.matrix_power(self.P, 1000)
         inv_dist = inv_l[0, :]
+        inv_l = inv_l / inv_l.sum()
         self.l_s = np.dot(self.labor_states, inv_dist)
         return self.P, self.l_s
 
@@ -324,7 +329,6 @@ V, g, indk, dist, r = Aiyagari(k_t, hh)
 stop = time.time()
 print("Solving the model took %F minutes." % ((stop - start) / 60))
 
-
 # Plot the value function and the policy function
 fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(15, 10))
 axes[0].plot(hh.k, V.transpose())
@@ -333,8 +337,8 @@ axes[0].set_title("Value functions")
 axes[1].plot(hh.k, g.transpose())
 axes[1].plot(hh.k, hh.k)
 axes[1].set_title('Policy functions')
-plt.show()
-plt.savefig("convergence.png")
+#plt.show()
+#plt.savefig("convergence.png")
 
 
 # Generating the distribution
@@ -386,7 +390,7 @@ plt.xlabel('Asset Value')
 plt.ylabel('Frequency')
 plt.title('Asset Distribution')
 plt.show()
-plt.savefig("distribution.png")
+#plt.savefig("distribution.png")
 
 
 # Print the output

@@ -11,6 +11,10 @@ import matplotlib.pyplot as plt
 import quantecon as qe
 from numba import jit
 
+# Supress warning
+import warnings
+warnings.filterwarnings("ignore")
+
 
 class HH():
     

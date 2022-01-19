@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
 """
-Spyder Editor
-
-This solves the RBC model with value function iteration and exogenous labor
-supply
-
+This solves the RBC model with endogeneous labor supply
+with the howard improvement algorithm as illustrated in
+Ljungqvist and Sargent (2012), p. 106
 """
 
 import time
@@ -14,6 +11,10 @@ import quantecon as qe
 import scipy.optimize as opt
 from numba import jit
 
+# Supress warning
+import warnings
+warnings.filterwarnings("ignore")
+
 
 #parameters
 theta = 0.4; 
@@ -21,13 +22,12 @@ delta = 0.019;
 sigma = 2;
 vega  = 0.36;
 beta  = 0.99;
-nk    = 100;
 nz    = np.int(21);
 rho   = 0.95;
 stdz  = np.sqrt(0.000049);
 m     = 3;
 sims  = 10;
-nk   = np.int(150);
+nk   = np.int(250);
 
 #discretizing the grid
 mc = qe.markov.approximation.tauchen(rho,stdz,0,m,nz)
@@ -73,6 +73,7 @@ for iz in range(nz):
             labor[iz,ik,jk] = opt.fsolve(res, l_ss)
             consumption[iz,ik,jk] = vega/(1-vega)*(1-labor[iz,ik,jk])*(1-theta)*(k[ik]/labor[iz,ik,jk])**(theta)
 stops = time.time()
+print("Interpolation completed after %F seconds." %(stops - starts))
 
 
 # Function to search nearest value on the grid
@@ -161,8 +162,8 @@ axes[0].set_title("Value functions")
 axes[1].plot(k,g.transpose())
 axes[1].plot(k,k)
 axes[1].set_title('Policy functions')
-plt.show()
-plt.savefig("convergence.png")
+#plt.show()
+#plt.savefig("convergence.png")
 
 
 # Simulate the economy
@@ -208,7 +209,7 @@ axes[1].set_xlabel("Period")
 axes[1].set_ylabel("GDP components")
 axes[1].legend(loc=5)
 plt.show()
-plt.savefig("simulation.png")
+#plt.savefig("simulation.png")
 
 
 print("\nThe stochastic steady state is %F, with the true being %F" % (np.mean(K), k_ss))
