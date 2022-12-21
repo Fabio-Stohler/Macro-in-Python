@@ -160,13 +160,16 @@ for i in range(nX):
 # Normalizing the interest rate into percentage points difference
 IRF_RBC[1] = IRF_RBC[1] * X_SS[1] 
 
+# Drop all IRFs that are below e**(-15)
+criterion = ((np.abs(IRF_RBC) < 10**(-10))) 
+IRF_RBC[criterion] = 0.0
 
 # List with the variable names
 names = ["TFP", "Output", "Consumption", "Investment", "Interest", "Capital", "Wage", "Labour"]
 
 
 # Plotting the results of the IRF
-fig, axes = plt.subplots(nrows = 2, ncols = 4, figsize = (18,9))
+fig, axes = plt.subplots(nrows = 2, ncols = 4, figsize = (10,5))
 for i in range(nX):
     row = i // 4
     col = i % 4
@@ -200,7 +203,7 @@ for t in range(1,T):
 
 
 # Plotting the development
-fig, axes = plt.subplots(nrows = 2, ncols = 4, figsize = (18,9))
+fig, axes = plt.subplots(nrows = 2, ncols = 4, figsize = (10,5))
 for i in range(nX):
     row = i // 4
     col = i % 4

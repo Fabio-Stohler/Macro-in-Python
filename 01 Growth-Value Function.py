@@ -111,7 +111,7 @@ V, g = value_function(hh)
        
 
 #Plotting the value and policy function                 
-fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(15,10))
+fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(10,5))
 axes[0].plot(hh.k,V.transpose())
 axes[0].set_title("Value functions")
 
@@ -147,7 +147,7 @@ inv = out - cons
 
 # Plot the simulation of the economy
 t = range(T)
-fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(15,10))
+fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(10,5))
 
 axes[0].plot(t, K)
 axes[0].set_title("Trajectory of capital")

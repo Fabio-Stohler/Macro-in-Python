@@ -106,7 +106,7 @@ g = hh.k**hh.theta + (1-hh.delta)*hh.k - sigma
     
 
 #print(toc-tic)                 
-fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(15,10))
+fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(10,5))
 axes[0].plot(hh.k,V.transpose())
 axes[0].set_title("Value functions")
 
@@ -136,7 +136,7 @@ inv = out - cons
 
 # Plot the development of the economy
 t = range(T)
-fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(15,10))
+fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(10,5))
 
 axes[0].plot(t, K, label = "Development of capital")
 axes[0].plot(t, np.ones(T)*hh.k_ss, label = "Steady state of capital")

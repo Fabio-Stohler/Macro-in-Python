@@ -128,7 +128,7 @@ g = zbar*kbar**theta + (1-delta)*kbar - g
 
 
 # Plotting the Value function, and the policy function
-fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(15,10))
+fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(10,5))
 axes[0].plot(k,V.transpose())
 axes[0].set_title("Value functions")
 
@@ -166,7 +166,7 @@ inv = out - cons
 
 # Plot the development of the economy
 t = range(T)
-fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(15,10))
+fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize=(10,5))
 axes[0].plot(t, K)
 axes[0].set_title("Trajectory of capital")
 axes[0].set_xlabel("Period")

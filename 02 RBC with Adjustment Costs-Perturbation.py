@@ -156,9 +156,13 @@ IRF_RBC[1] = IRF_RBC[1] * X_SS[1]
 # List with the variable names
 names = ["TFP", "Output", "Consumption", "Investment", "Interest", "Price of Capital", "Capital", "Wage", "Labour"]
 
+# Drop all IRFs that are below e**(-15)
+criterion = ((np.abs(IRF_RBC) < 10**(-10))) 
+IRF_RBC[criterion] = 0.0
+
 
 # Plotting the results of the IRF
-fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = (18,9))
+fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = (10,5))
 for i in range(nX):
     row = i // 3
     col = i % 3
@@ -188,7 +192,7 @@ for t in range(1,T):
 
 
 # Plotting the development
-fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = (18,9))
+fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = (10,5))
 for i in range(nX):
     row = i // 3
     col = i % 3

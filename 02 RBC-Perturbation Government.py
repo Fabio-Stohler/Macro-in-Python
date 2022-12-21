@@ -164,7 +164,7 @@ names = ["TFP", "Output", "Consumption", "Investment", "Government Exp.", "Inter
 
 
 # Plotting the results of the IRF
-fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = (18,9))
+fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = (10,5))
 for i in range(nX):
     row = i // 3
     col = i % 3
@@ -197,7 +197,7 @@ for t in range(1,T):
 
 
 # Plotting the development
-fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = (18,9))
+fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = (10,5))
 for i in range(nX):
     row = i // 3
     col = i % 3

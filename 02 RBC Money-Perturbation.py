@@ -168,7 +168,7 @@ names = ["Prod.", "Output", "Consumption", "Wage", "Interest", "Money", "Inflati
 
 
 # Plotting the results of the IRF
-fig, axes = plt.subplots(nrows = 2, ncols = 4, figsize = (18,9))
+fig, axes = plt.subplots(nrows = 2, ncols = 4, figsize = (10,5))
 for i in range(nX-1):
     row = i // 4
     col = i % 4
