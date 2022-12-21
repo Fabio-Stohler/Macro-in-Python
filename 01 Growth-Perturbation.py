@@ -20,10 +20,10 @@ iZ, iR, iW, iK, iY, iC = range(nX)
 
 
 # Parameters
-alpha = 0.4
+alpha = 1/3
 beta = 0.99
-gamma = 2
-delta = 0.019
+gamma = 1
+delta = 0.025
 rho = 0.95
 
 
