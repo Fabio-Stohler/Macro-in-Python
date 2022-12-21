@@ -143,7 +143,7 @@ IRF_RBC[1] = IRF_RBC[1] * X_SS[1]
 names = ["TFP", "Interest", "Wage", "Capital", "Output", "Consumption"]
 
 # Plotting the results of the IRF
-fig, axes = plt.subplots(nrows = 2, ncols = 3, figsize = (12,6))
+fig, axes = plt.subplots(nrows = 2, ncols = 3, figsize = (10,5))
 for i in range(nX):
     row = i // 3
     col = i % 3
