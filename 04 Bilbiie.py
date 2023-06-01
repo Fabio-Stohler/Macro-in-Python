@@ -18,7 +18,7 @@ nX = 12
 # Number of shocks
 nEps = 1
 # Indexing the variables
-iCs, iCh, iC, iNs, iNh, iN, iY, iPi, iD, iW, iI, iR = range(nX)
+iCs, iCh, iC, iNs, iNh, iN, iY, iPi, iD, iW, iI, iX = range(nX)
 
 
 # Parameters
@@ -30,6 +30,7 @@ psi = 500
 tauD = 0
 tauS = eta / (eta - 1.0) - 1.0
 s = 0.98
+rho = 0.7
 lambdas = 0.22
 phi = 1.5
 
@@ -47,16 +48,16 @@ def SteadyState():
     Y = C
     D = (1+tauS) * Y - W * N - tauS * Y
     I = 1.0 / beta * Pi ** phi
-    R = I / Pi
+    EX = 1.0
 
     X = np.zeros(nX)
-    X[[iCs, iCh, iC, iNs, iNh, iN, iY, iPi, iD, iW, iI, iR]] = (Cs, Ch, C, Ns, Nh, N, Y, Pi, D, W, I, R)
+    X[[iCs, iCh, iC, iNs, iNh, iN, iY, iPi, iD, iW, iI, iX]] = (Cs, Ch, C, Ns, Nh, N, Y, Pi, D, W, I, EX)
     return X
 
 
 # Get the steady state
 X_SS = SteadyState()
-X_EXP = np.array(("CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "P", "R"))
+X_EXP = np.array(("CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "P", "Shock"))
 epsilon_SS = np.zeros(1)
 print("Variables: {}".format(X_EXP))
 print("Steady state: {}".format(X_SS))
@@ -67,11 +68,12 @@ def F(X_Lag,X,X_Prime,epsilon):
 
     # Unpack
     epsilon_m = epsilon
-    Cs, Ch, C, Ns, Nh, N, Y, Pi, D, W, I, R = X
-    Cs_L, Ch_L, C_L, Ns_L, Nh_L, N_L, Y_L, Pi_L, D_L, W_L, I_L, R_L = X_Lag
-    Cs_P, Ch_P, C_P, Ns_P, Nh_P, N_P, Y_P, Pi_P, D_P, W_P, I_P, R_P = X_Prime
+    Cs, Ch, C, Ns, Nh, N, Y, Pi, D, W, I, EX = X
+    Cs_L, Ch_L, C_L, Ns_L, Nh_L, N_L, Y_L, Pi_L, D_L, W_L, I_L, EX_L = X_Lag
+    Cs_P, Ch_P, C_P, Ns_P, Nh_P, N_P, Y_P, Pi_P, D_P, W_P, I_P, EX_P = X_Prime
     return np.hstack((
-                Cs ** (-sigma) - beta * R * (s * Cs_P ** (-sigma) + (1 - s) * Ch_P ** (-sigma)), # Euler equation
+                Cs ** (-sigma) - beta * I / Pi_P * (s * Cs_P ** (-sigma) + (1 - s) * Ch_P ** (-sigma)), # Euler equation
+                Cs - W * Ns - (1 - tauD) / (1 - lambdas) * D, # BC of saver
                 Ch - W * Nh - tauD / lambdas * D, # BC of HtM household
                 Nh ** varphi - W * Ch ** (-sigma), # Labor supply of HtM household
                 Ns ** varphi - W * Cs ** (-sigma), # Labor supply of Saver household
@@ -80,9 +82,9 @@ def F(X_Lag,X,X_Prime,epsilon):
                 D - (1 + tauS) * Y + W * N + tauS * Y, # Profits
                 (Pi - 1.0) * Pi - beta * ((Cs_P / Cs) ** (-sigma) * Y / Y_P * (Pi_P - 1.0) * Pi_P) - eta / psi * (W - 1 / (1 / (1 + tauS) * eta / (eta - 1))), # Phillips curve
                 Y - N, # Production function
-                W - 1.0, # Wage setting
-                I - 1 / beta * Pi ** phi * np.exp(epsilon_m), # Taylor rule
-                R - I / Pi_P # Fisher equation
+                #C - (1 - psi / 2 * (Pi - 1.0) ** 2) * Y, # Goods market clearing
+                I - 1 / beta * Pi ** phi * EX, # Taylor rule
+                EX - EX_L ** rho * np.exp(epsilon_m) # Transition of shock
             ))
 
 
@@ -160,7 +162,7 @@ for i in floors:
 
 
 # List with the variable names
-names = ["CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "R"]
+names = ["CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "X"]
 
 
 # Plotting the results of the IRF
