@@ -9,6 +9,7 @@ from autograd import jacobian
 np.set_printoptions(suppress=True,precision=4)
 import matplotlib.pyplot as plt
 import warnings
+import scipy.optimize as opt
 from prettytable import PrettyTable
 
 
@@ -26,33 +27,68 @@ sigma = 2.0
 varphi = 1.0
 eta = 11
 psi = 500
-tauD = 0.0
-tauS = eta / (eta - 1.0) - 1.0
-s = 0.98
-h = 0.92
+tauD = 0.1
+tauS = 0.0 # no profits under: eta / (eta - 1.0) - 1.0
+L = 0.22 # Share of HtM
+s = 0.96
+h = 2 - s - (1 - s) / L
 rhoI = 0.75
 rhoS = 0.5
 ps_Y = 1.0
 phi = 1.5
 
-# Defining the desired inequality
-Gamma = 1.05
-
-# Defining a function, which gives back the steady state
-def SteadyState():
-    Ch = 1.0
-    Cs = Ch / Gamma
-    W = 1.0
+# Given an initial guess for consumption gives back error
+def fChi(Chi):
+    C = 1.0
     L = (1 - s) / (2 - s - h)
-    C = L * Ch + (1-L) * Cs
-    Ns = (W * Cs ** (-sigma)) ** (1 / varphi)
-    Nh = (W * Ch ** (-sigma)) ** (1 / varphi)
-    N = L * Nh + (1-L) * Ns
-    Pi = 1.0
-    Y = C
-    D = (1+tauS) * Y - W * N - tauS * Y
     S = s
-    I = 1.0 / (beta * (S + (1 - S) * Gamma ** (sigma))) * Pi ** phi
+    W = (1 + tauS) * (eta - 1.0) / eta
+    Y = C
+    N = Y
+
+    # Calculated values
+    D = (1+tauS) * Y - W * N - tauS * Y
+    fCh = lambda Ch: W * (W * Ch ** (-sigma) / Chi) ** (1 / varphi) + tauD / L * D - Ch
+    fCs = lambda Cs: W * (W * Cs ** (-sigma) / Chi) ** (1 / varphi) + (1 - tauD) / (1 - L) * D - Cs
+    Ch = opt.fsolve(fCh, 0.95)[0]
+    Cs = opt.fsolve(fCs, 1.05)[0]
+
+    return Ch * L + Cs * (1 - L) - C
+
+# Finding the value for Chi s.t. C = 1.0
+Chi = opt.fsolve(fChi, 1.0)[0]
+
+
+
+# Defining a function, which gives back the steady state, Y = C = 1.0 normalized
+def SteadyState():
+    # Given / normalized values
+    L = (1 - s) / (2 - s - h)
+    Pi = 1.0
+    S = s
+    W = (1 + tauS) * (eta - 1.0) / eta
+    C = 1.0
+    Y = C
+    N = Y
+
+    # Calculated values
+    D = (1+tauS) * Y - W * N - tauS * Y
+
+    # Finding consumption choice
+    fCh = lambda Ch: W * (W * Ch ** (-sigma) / Chi) ** (1 / varphi) + tauD / L * D - Ch
+    fCs = lambda Cs: W * (W * Cs ** (-sigma) / Chi) ** (1 / varphi) + (1 - tauD) / (1 - L) * D - Cs
+    Ch = opt.fsolve(fCh, 0.95)[0]
+    Cs = opt.fsolve(fCs, 1.05)[0]
+
+    # Finding labor choice
+    Ns = (W * Cs ** (-sigma) / Chi) ** (1 / varphi)
+    Nh = (W * Ch ** (-sigma) / Chi) ** (1 / varphi)
+    
+    # Aggregation
+    N = L * Nh + (1 - L) * Ns
+
+    # Closing the system
+    I = 1.0 / (beta * (S + (1 - S) * (Cs / Ch) ** (sigma))) * Pi ** phi
     XI = 1.0
     XS = 1.0
 
@@ -65,6 +101,7 @@ def SteadyState():
 
 
 # Get the steady state
+table = PrettyTable()
 X_SS = SteadyState()
 table.add_column("Variables", ["CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "L", "S", "Shock I", "Shock S"])
 epsilon_SS = np.zeros(2)
@@ -94,8 +131,8 @@ def F(X_Lag,X,X_Prime,epsilon,XSS):
                 Cs ** (-sigma) - beta * I / Pi_P * (S_P * Cs_P ** (-sigma) + (1 - S_P) * Ch_P ** (-sigma)), # Euler equation
                 Cs - W * Ns - (1 - tauD) / (1 - L) * D, # BC of saver
                 Ch - W * Nh - tauD / L * D, # BC of HtM household
-                Nh ** varphi - W * Ch ** (-sigma), # Labor supply of HtM household
-                Ns ** varphi - W * Cs ** (-sigma), # Labor supply of Saver household
+                Chi * Nh ** varphi - W * Ch ** (-sigma), # Labor supply of HtM household
+                Chi * Ns ** varphi - W * Cs ** (-sigma), # Labor supply of Saver household
 
                 # Distributional changes
                 L - h * L_L - (1 - S) * (1 - L_L), # Distribution changes over time
@@ -108,14 +145,16 @@ def F(X_Lag,X,X_Prime,epsilon,XSS):
                 # Firms
                 Y - N, # Production function
                 D - (1 + tauS) * Y + W * N + tauS * Y, # Profits
-                (Pi - 1.0) * Pi - beta * ((Cs_P / Cs) ** (-sigma) * Y / Y_P * (Pi_P - 1.0) * Pi_P) - eta / psi * (W - 1 / (1 / (1 + tauS) * eta / (eta - 1))), # Phillips curve
+                (Pi - 1.0) * Pi - beta * ((Cs_P / Cs) ** (-sigma) * Y_P / Y * (Pi_P - 1.0) * Pi_P) - eta / psi * (W - 1 / (1 / (1 + tauS) * eta / (eta - 1))), # Phillips curve
                 
                 # Monetary policy
-                I - 1 / beta * Pi ** phi * XI # Taylor rule
+                I - 1.0 / (beta * (S + (1 - S) * (Cs_SS / Ch_SS) ** (sigma))) * Pi ** phi * XI # Taylor rule
             ))
 
 
 # Check whether at the steady state F is zero
+print(" ")
+print("F at the steady state has the values:")
 print(F(X_SS,X_SS,X_SS,epsilon_SS, X_SS))
 assert(np.allclose( F(X_SS,X_SS,X_SS,epsilon_SS, X_SS) , np.zeros(nX)))
 
@@ -177,7 +216,7 @@ IRF_MP = np.zeros((nX,T))
 IRF_S = np.copy(IRF_MP)
 # First shock is monetary, second is risk
 shockMP = np.array((0.01, 0.0))
-shockS = np.array((0.0, -0.05))
+shockS = np.array((0.0, -0.025))
 IRF_MP[:,0] = np.transpose(Q @ shockMP)
 IRF_S[:,0] = np.transpose(Q @ shockS) 
 
@@ -217,12 +256,12 @@ fig.tight_layout()
 plt.show()
 
 # Plotting the results of the IRF to a S shock
-# fig, axes = plt.subplots(nrows = 5, ncols = 3, figsize = (10,6))
-# for i in range(nX):
-    # row = i // 3        # Ganzahlige Division
-    # col = i % 3         # Rest
-    # axes[row, col].plot(IRF_S[i,:])
-    # axes[row, col].plot(np.zeros(T))
-    # axes[row, col].set_title(names[i])
-# fig.tight_layout()
-# plt.show()
+fig, axes = plt.subplots(nrows = 5, ncols = 3, figsize = (10,6))
+for i in range(nX):
+    row = i // 3        # Ganzahlige Division
+    col = i % 3         # Rest
+    axes[row, col].plot(IRF_S[i,:])
+    axes[row, col].plot(np.zeros(T))
+    axes[row, col].set_title(names[i])
+fig.tight_layout()
+plt.show()
