@@ -35,7 +35,7 @@ ps_Y = 1.0
 phi = 1.5
 
 # Defining the desired inequality
-Gamma = 1.0
+Gamma = 1.05
 
 # Defining a function, which gives back the steady state
 def SteadyState():
@@ -50,8 +50,8 @@ def SteadyState():
     Pi = 1.0
     Y = C
     D = (1+tauS) * Y - W * N - tauS * Y
-    I = 1.0 / beta * Pi ** phi
     S = s
+    I = 1.0 / (beta * (S + (1 - S) * Gamma ** (sigma))) * Pi ** phi
     XI = 1.0
     XS = 1.0
 
@@ -213,12 +213,12 @@ fig.tight_layout()
 plt.show()
 
 # Plotting the results of the IRF to a S shock
-fig, axes = plt.subplots(nrows = 5, ncols = 3, figsize = (10,6))
-for i in range(nX):
-    row = i // 3        # Ganzahlige Division
-    col = i % 3         # Rest
-    axes[row, col].plot(IRF_S[i,:])
-    axes[row, col].plot(np.zeros(T))
-    axes[row, col].set_title(names[i])
-fig.tight_layout()
-plt.show()
+# fig, axes = plt.subplots(nrows = 5, ncols = 3, figsize = (10,6))
+# for i in range(nX):
+    # row = i // 3        # Ganzahlige Division
+    # col = i % 3         # Rest
+    # axes[row, col].plot(IRF_S[i,:])
+    # axes[row, col].plot(np.zeros(T))
+    # axes[row, col].set_title(names[i])
+# fig.tight_layout()
+# plt.show()
