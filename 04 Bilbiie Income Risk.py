@@ -9,6 +9,7 @@ from autograd import jacobian
 np.set_printoptions(suppress=True,precision=4)
 import matplotlib.pyplot as plt
 import warnings
+from prettytable import PrettyTable
 
 
 # Number of Variables
@@ -65,10 +66,13 @@ def SteadyState():
 
 # Get the steady state
 X_SS = SteadyState()
-X_EXP = np.array(("CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "L", "S", "Shock I", "Shock S"))
+table.add_column("Variables", ["CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "L", "S", "Shock I", "Shock S"])
 epsilon_SS = np.zeros(2)
-print("Variables: {}".format(X_EXP))
-print("Steady state: {}".format(X_SS))
+table.add_column("Values", np.round(X_SS, 4))
+print(" ")
+print(table)
+# print("Variables: {}".format(X_EXP))
+# print("Steady state: {}".format(X_SS))
 
 
 # Model equations

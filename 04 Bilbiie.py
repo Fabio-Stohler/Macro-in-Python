@@ -10,7 +10,7 @@ from autograd import jacobian
 np.set_printoptions(suppress=True,precision=4)
 import matplotlib.pyplot as plt
 import warnings
-
+from prettytable import PrettyTable
 
 
 # Number of Variables
@@ -56,11 +56,15 @@ def SteadyState():
 
 
 # Get the steady state
+table = PrettyTable()
 X_SS = SteadyState()
-X_EXP = np.array(("CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "P", "Shock"))
+table.add_column("Variables", ["CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "Shock"])
 epsilon_SS = np.zeros(1)
-print("Variables: {}".format(X_EXP))
-print("Steady state: {}".format(X_SS))
+table.add_column("Values", np.round(X_SS, 4))
+print(" ")
+print(table)
+# print("Variables: {}".format(X_EXP))
+# print("Steady state: {}".format(X_SS))
 
 
 # Model equations
@@ -80,7 +84,7 @@ def F(X_Lag,X,X_Prime,epsilon):
                 C - lambdas * Ch - (1-lambdas) * Cs, # Aggregate consumption
                 N - lambdas * Nh - (1-lambdas) * Ns, # Aggregate labor supply
                 D - (1 + tauS) * Y + W * N + tauS * Y, # Profits
-                (Pi - 1.0) * Pi - beta * ((Cs_P / Cs) ** (-sigma) * Y / Y_P * (Pi_P - 1.0) * Pi_P) - eta / psi * (W - 1 / (1 / (1 + tauS) * eta / (eta - 1))), # Phillips curve
+                (Pi - 1.0) * Pi - beta * ((Cs_P / Cs) ** (-sigma) * Y_P / Y * (Pi_P - 1.0) * Pi_P) - eta / psi * (W - 1 / (1 / (1 + tauS) * eta / (eta - 1))), # Phillips curve
                 Y - N, # Production function
                 #C - (1 - psi / 2 * (Pi - 1.0) ** 2) * Y, # Goods market clearing
                 I - 1 / beta * Pi ** phi * EX, # Taylor rule
