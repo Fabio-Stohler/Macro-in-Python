@@ -14,28 +14,36 @@ from prettytable import PrettyTable
 
 
 # Number of Variables
-nX = 15
+nX = 16
 # Number of shocks
 nEps = 2
 # Indexing the variables
-iCs, iCh, iC, iNs, iNh, iN, iY, iPi, iD, iW, iI, iL, iS, iXI, iXS = range(nX)
+iCs, iCh, iC, iNs, iNh, iN, iY, iPi, iD, iV, iW, iI, iL, iS, iXI, iXS = range(nX)
 
 
 # Parameters
 beta = 0.99
 sigma = 2.0
-varphi = 1.0
+varphi = 2.0
 eta = 11
-psi = 500
-tauD = 0.1
+psi = 200
+tauD = 0.15
 tauS = 0.0 # no profits under: eta / (eta - 1.0) - 1.0
-L = 0.22 # Share of HtM
+L = 0.15 # Share of HtM
 s = 0.96
 h = 2 - s - (1 - s) / L
 rhoI = 0.75
 rhoS = 0.5
-ps_Y = 1.0
-phi = 1.5
+ps_Y = 0.0
+phi = 2.5
+
+
+# Defining the marginal utility functions
+Uc = lambda C: C ** (-sigma)
+inv_Uc = lambda Uc: Uc ** (-1 / sigma)
+Un = lambda N, chi: chi * N ** varphi
+inv_Un = lambda Un, chi: (1 / chi * Un) ** (1 / varphi)
+
 
 # Given an initial guess for consumption gives back error
 def fChi(Chi):
@@ -48,8 +56,8 @@ def fChi(Chi):
 
     # Calculated values
     D = (1+tauS) * Y - W * N - tauS * Y
-    fCh = lambda Ch: W * (W * Ch ** (-sigma) / Chi) ** (1 / varphi) + tauD / L * D - Ch
-    fCs = lambda Cs: W * (W * Cs ** (-sigma) / Chi) ** (1 / varphi) + (1 - tauD) / (1 - L) * D - Cs
+    fCh = lambda Ch: W * inv_Un(W * Uc(Ch), Chi) + tauD / L * D - Ch
+    fCs = lambda Cs: W * inv_Un(W * Uc(Cs), Chi) + (1 - tauD) / (1 - L) * D - Cs
     Ch = opt.fsolve(fCh, 0.95)[0]
     Cs = opt.fsolve(fCs, 1.05)[0]
 
@@ -73,27 +81,28 @@ def SteadyState():
 
     # Calculated values
     D = (1+tauS) * Y - W * N - tauS * Y
+    V = beta / (1-beta) * D
 
     # Finding consumption choice
-    fCh = lambda Ch: W * (W * Ch ** (-sigma) / Chi) ** (1 / varphi) + tauD / L * D - Ch
-    fCs = lambda Cs: W * (W * Cs ** (-sigma) / Chi) ** (1 / varphi) + (1 - tauD) / (1 - L) * D - Cs
+    fCh = lambda Ch: W * inv_Un(W * Uc(Ch), Chi) + tauD / L * D - Ch
+    fCs = lambda Cs: W * inv_Un(W * Uc(Cs), Chi) + (1 - tauD) / (1 - L) * D - Cs
     Ch = opt.fsolve(fCh, 0.95)[0]
     Cs = opt.fsolve(fCs, 1.05)[0]
 
     # Finding labor choice
-    Ns = (W * Cs ** (-sigma) / Chi) ** (1 / varphi)
-    Nh = (W * Ch ** (-sigma) / Chi) ** (1 / varphi)
+    Ns = inv_Un(W * Uc(Cs), Chi) ** (1 / varphi)
+    Nh = inv_Un(W * Uc(Ch), Chi) ** (1 / varphi)
     
     # Aggregation
     N = L * Nh + (1 - L) * Ns
 
     # Closing the system
-    I = 1.0 / (beta * (S + (1 - S) * (Cs / Ch) ** (sigma))) * Pi ** phi
+    I = 1.0 / (beta * (S + (1 - S) * Uc(Ch/Cs))) * Pi ** phi
     XI = 1.0
     XS = 1.0
 
     X = np.zeros(nX)
-    X[[iCs, iCh, iC, iNs, iNh, iN, iY, iPi, iD, iW, iI, iL, iS, iXI, iXS]] = (Cs, Ch, C, Ns, Nh, N, Y, Pi, D, W, I, L, S, XI, XS)
+    X[[iCs, iCh, iC, iNs, iNh, iN, iY, iPi, iD, iV, iW, iI, iL, iS, iXI, iXS]] = (Cs, Ch, C, Ns, Nh, N, Y, Pi, D, V, W, I, L, S, XI, XS)
     return X
 
 # Adjusting the necessary parameters to incorporate inequality
@@ -103,7 +112,7 @@ def SteadyState():
 # Get the steady state
 table = PrettyTable()
 X_SS = SteadyState()
-table.add_column("Variables", ["CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "L", "S", "Shock I", "Shock S"])
+table.add_column("Variables", ["CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "V", "W", "I", "L", "S", "Shock I", "Shock S"])
 epsilon_SS = np.zeros(2)
 table.add_column("Values", np.round(X_SS, 4))
 print(" ")
@@ -117,10 +126,10 @@ def F(X_Lag,X,X_Prime,epsilon,XSS):
 
     # Unpack
     epsilon_i, epsilon_s = epsilon
-    Cs, Ch, C, Ns, Nh, N, Y, Pi, D, W, I, L, S, XI, XS = X
-    Cs_L, Ch_L, C_L, Ns_L, Nh_L, N_L, Y_L, Pi_L, D_L, W_L, I_L, L_L, S_L, XI_L, XS_L = X_Lag
-    Cs_P, Ch_P, C_P, Ns_P, Nh_P, N_P, Y_P, Pi_P, D_P, W_P, I_P, L_P, S_P, XI_P, XS_P = X_Prime
-    Cs_SS, Ch_SS, C_SS, Ns_SS, Nh_SS, N_SS, Y_SS, Pi_SS, D_SS, W_SS, I_SS, L_SS, S_SS, XI_SS, XS_SS = XSS
+    Cs, Ch, C, Ns, Nh, N, Y, Pi, D, V, W, I, L, S, XI, XS = X
+    Cs_L, Ch_L, C_L, Ns_L, Nh_L, N_L, Y_L, Pi_L, D_L, V_L, W_L, I_L, L_L, S_L, XI_L, XS_L = X_Lag
+    Cs_P, Ch_P, C_P, Ns_P, Nh_P, N_P, Y_P, Pi_P, D_P, V_P, W_P, I_P, L_P, S_P, XI_P, XS_P = X_Prime
+    Cs_SS, Ch_SS, C_SS, Ns_SS, Nh_SS, N_SS, Y_SS, Pi_SS, D_SS, V_SS, W_SS, I_SS, L_SS, S_SS, XI_SS, XS_SS = XSS
     return np.hstack((
                 # Shocks
                 XI - XI_L ** rhoI * np.exp(epsilon_i), # Transition of MP shock
@@ -128,11 +137,12 @@ def F(X_Lag,X,X_Prime,epsilon,XSS):
 
                 # Household
                 S / s - XS * (Y / Y_SS) ** ps_Y, # Idiosyncratic risk
-                Cs ** (-sigma) - beta * I / Pi_P * (S_P * Cs_P ** (-sigma) + (1 - S_P) * Ch_P ** (-sigma)), # Euler equation
+                Uc(Cs) - beta * I / Pi_P * (S_P * Uc(Cs_P) + (1 - S_P) * Uc(Ch_P)), # Euler equation bonds
+                Uc(Cs) - beta * (V_P + D_P) / V * Uc(Cs_P), # Euler equation stocks
                 Cs - W * Ns - (1 - tauD) / (1 - L) * D, # BC of saver
                 Ch - W * Nh - tauD / L * D, # BC of HtM household
-                Chi * Nh ** varphi - W * Ch ** (-sigma), # Labor supply of HtM household
-                Chi * Ns ** varphi - W * Cs ** (-sigma), # Labor supply of Saver household
+                Un(Nh, Chi) - W * Uc(Ch), # Labor supply of HtM household
+                Un(Ns, Chi) - W * Uc(Cs), # Labor supply of Saver household
 
                 # Distributional changes
                 L - h * L_L - (1 - S) * (1 - L_L), # Distribution changes over time
@@ -145,10 +155,10 @@ def F(X_Lag,X,X_Prime,epsilon,XSS):
                 # Firms
                 Y - N, # Production function
                 D - (1 + tauS) * Y + W * N + tauS * Y, # Profits
-                (Pi - 1.0) * Pi - beta * ((Cs_P / Cs) ** (-sigma) * Y_P / Y * (Pi_P - 1.0) * Pi_P) - eta / psi * (W - 1 / (1 / (1 + tauS) * eta / (eta - 1))), # Phillips curve
+                (Pi - 1.0) * Pi - beta * (Uc(Cs_P / Cs) * Y_P / Y * (Pi_P - 1.0) * Pi_P) - eta / psi * (W - 1 / (1 / (1 + tauS) * eta / (eta - 1))), # Phillips curve
                 
                 # Monetary policy
-                I - 1.0 / (beta * (S + (1 - S) * (Cs_SS / Ch_SS) ** (sigma))) * Pi ** phi * XI # Taylor rule
+                I - I_SS * Pi ** phi * XI # Taylor rule
             ))
 
 
@@ -232,23 +242,26 @@ IRF_MP[criterion_MP] = 0.0
 IRF_S[criterion_S] = 0.0
 
 # Dividend is zero in the steady state
-floors = [ f for f in range(nX) if f != 8 ]
+floors = [ f for f in range(nX) if f != 8 or 12]
 
 # Normalizing with respect to the steady state
 for i in floors:
-    IRF_MP[i,:] = IRF_MP[i,:] / X_SS[i] * 100
-    IRF_S[i,:] = IRF_S[i,:] / X_SS[i] * 100
+    IRF_MP[i,:] = IRF_MP[i,:] * 100
+    IRF_S[i,:] = IRF_S[i,:] * 100
 
 
 # List with the variable names
-names = ["CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "W", "I", "L", "S", "XI", "XS"]
+names = ["CS", "CH", "C", "Ns", "Nh", "N", "Y", "Pi", "D", "V", "W", "I", "L", "S", "XI", "XS"]
 
+IRFS = PrettyTable()
+IRFS.add_column("IRFs", IRF_MP)
+print(IRFS)
 
 # Plotting the results of the IRF to a MP shock
-fig, axes = plt.subplots(nrows = 5, ncols = 3, figsize = (10,6))
+fig, axes = plt.subplots(nrows = 4, ncols = 4, figsize = (10,6))
 for i in range(nX):
-    row = i // 3        # Ganzahlige Division
-    col = i % 3         # Rest
+    row = i // 4        # Ganzahlige Division
+    col = i % 4         # Rest
     axes[row, col].plot(IRF_MP[i,:])
     axes[row, col].plot(np.zeros(T))
     axes[row, col].set_title(names[i])
@@ -256,10 +269,10 @@ fig.tight_layout()
 plt.show()
 
 # Plotting the results of the IRF to a S shock
-fig, axes = plt.subplots(nrows = 5, ncols = 3, figsize = (10,6))
+fig, axes = plt.subplots(nrows = 4, ncols = 4, figsize = (10,6))
 for i in range(nX):
-    row = i // 3        # Ganzahlige Division
-    col = i % 3         # Rest
+    row = i // 4        # Ganzahlige Division
+    col = i % 4         # Rest
     axes[row, col].plot(IRF_S[i,:])
     axes[row, col].plot(np.zeros(T))
     axes[row, col].set_title(names[i])
